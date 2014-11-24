@@ -43,13 +43,14 @@
 //This is the date when the comment was posted.
 - (NSDate *)postDate
 {
-    return self.date;
+//    return self.date;
+    return nil;
 }
 
 //This is the name that will be displayed for whoever posted the comment.
 - (NSString *)authorName
 {
-    return self.user.username;
+    return self.user[@"fullname"];
 }
 
 //This is an image of the person who posted the comment

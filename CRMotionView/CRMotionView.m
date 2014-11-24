@@ -65,7 +65,6 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
     return self;
 }
 
-
 - (void)commonInit
 {
     _scrollView = [[UIScrollView alloc] initWithFrame:_viewFrame];
@@ -76,16 +75,22 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
     
     _containerView = [[UIView alloc] initWithFrame:_viewFrame];
     [_scrollView addSubview:_containerView];
-
     
     _minimumXOffset = 0;
     _zoomEnabled   = YES;
     // Tap gesture to open zoomable view
     UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+    [tapGesture setNumberOfTouchesRequired : 2];
     [self addGestureRecognizer:tapGesture];
     [self setMotionEnabled:YES];
 }
 
+#pragma mark - Public Method
+
+- (BOOL)isInZoom
+{
+    return self.zoomScrollView;
+}
 
 #pragma mark - UI actions
 
@@ -100,13 +105,18 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
             return;
         }
         
-        // Stop motion to avoid transition jump between two views
-//        [self stopMonitoring];
-        // Init and setup the zoomable scroll view
-        self.zoomScrollView = [[CRZoomScrollView alloc] initFromScrollView:self.scrollView withImage:imageView.image];
-        self.zoomScrollView.zoomDelegate = self;
-        
-        [self addSubview:self.zoomScrollView];
+        if (self.zoomScrollView != nil) {
+            [self.zoomScrollView removeFromSuperview];
+            self.zoomScrollView = nil;
+        } else {
+            // Stop motion to avoid transition jump between two views
+            //        [self stopMonitoring];
+            // Init and setup the zoomable scroll view
+            self.zoomScrollView = [[CRZoomScrollView alloc] initFromScrollView:self.scrollView withImage:imageView.image];
+            self.zoomScrollView.zoomDelegate = self;
+            
+            [self addSubview:self.zoomScrollView];
+        }
     }
 }
 
@@ -120,7 +130,7 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
     
     CGFloat width = _viewFrame.size.height / contentView.frame.size.height * contentView.frame.size.width;
     [contentView setFrame:CGRectMake(0, 0, width, _viewFrame.size.height)];
-
+    
     [_containerView addSubview:contentView];
     
     _scrollView.contentSize = CGSizeMake(contentView.frame.size.width, _scrollView.frame.size.height);

@@ -23,5 +23,7 @@
 - (instancetype)initWithFrame:(CGRect)frame image:(UIImage *)image;
 - (instancetype)initWithFrame:(CGRect)frame contentView:(UIView *)contentView;
 - (void)positionIndictatorToForegroundView:(UIView*)foregroundView originY:(NSUInteger)originY;
+- (void)handleTap:(UITapGestureRecognizer *)gesture;
+- (BOOL)isInZoom;
 
 @end

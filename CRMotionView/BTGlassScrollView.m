@@ -636,8 +636,15 @@
     [_foregroundScrollView setShowsHorizontalScrollIndicator:NO];
     [_foregroundContainerView addSubview:_foregroundScrollView];
     
-    UITapGestureRecognizer *_tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(foregroundTapped:)];
-    [_foregroundScrollView addGestureRecognizer:_tapRecognizer];
+    UITapGestureRecognizer *singleTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(foregroundTapped:)];
+    singleTapRecognizer.numberOfTapsRequired = 1;
+    [_foregroundScrollView addGestureRecognizer:singleTapRecognizer];
+    
+    UITapGestureRecognizer *doubleTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+    doubleTapRecognizer.numberOfTapsRequired = 2;
+    [_foregroundScrollView addGestureRecognizer:doubleTapRecognizer];
+    
+    [singleTapRecognizer requireGestureRecognizerToFail:doubleTapRecognizer];
     
     [_foregroundView setFrame:CGRectOffset(_foregroundView.bounds, (_foregroundScrollView.frame.size.width - _foregroundView.bounds.size.width)/2, _foregroundScrollView.frame.size.height - _viewDistanceFromBottom)];
     [_foregroundScrollView addSubview:_foregroundView];
@@ -687,6 +694,18 @@
 
 
 #pragma mark - Button
+
+- (void)handleTap:(UITapGestureRecognizer *)gesture
+{
+    [_backgroundImageView handleTap:gesture];
+    if ([_backgroundImageView isInZoom]) {
+        [_blurredBackgroundImageView setAlpha:0];
+        [_foregroundScrollView setContentOffset:CGPointMake(0, 0 - _foregroundScrollView.contentInset.top) animated:YES];
+    } else {
+        [_foregroundScrollView setContentOffset:CGPointMake(0, 0 - _foregroundScrollView.contentInset.top) animated:YES];
+    }
+}
+
 - (void)foregroundTapped:(UITapGestureRecognizer *)tapRecognizer
 {
     //TODO: eventually find a better way to handle this problem
@@ -746,16 +765,18 @@
         
         //set background scroll
         [_backgroundScrollView setContentOffset:CGPointMake(DEFAULT_MAX_BACKGROUND_MOVEMENT_HORIZONTAL, ratio * DEFAULT_MAX_BACKGROUND_MOVEMENT_VERTICAL)];
-    
-        //set alpha
-        [_blurredBackgroundImageView setAlpha:ratio];
-        if (ratio == 0) {
-            if (![_backgroundImageView isMotionEnabled]) {
-                [_backgroundImageView setMotionEnabled:YES];
-            }
-        } else {
-            if ([_backgroundImageView isMotionEnabled]) {
-                [_backgroundImageView setMotionEnabled:NO];
+        
+        if (![_backgroundImageView isInZoom]) {
+            //set alpha
+            [_blurredBackgroundImageView setAlpha:ratio];
+            if (ratio == 0) {
+                if (![_backgroundImageView isMotionEnabled]) {
+                    [_backgroundImageView setMotionEnabled:YES];
+                }
+            } else {
+                if ([_backgroundImageView isMotionEnabled]) {
+                    [_backgroundImageView setMotionEnabled:NO];
+                }
             }
         }
     }

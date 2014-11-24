@@ -14,6 +14,8 @@
 #import "EBCommentCell.h"
 #import "UIImageView+WebCache.h"
 
+#define imageSize 40
+
 @implementation EBCommentCell
 
 - (id)init
@@ -72,7 +74,7 @@
 
 - (void)loadAuthorAvatar
 {
-    UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(10, 5, 40, 40)];
+    UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(10, 5, imageSize, imageSize)];
     [self.imageView setContentMode:UIViewContentModeScaleAspectFill];
     [self addSubview:imageView];
     [self setAuthorAvatar:imageView];
@@ -89,7 +91,7 @@
     [button.titleLabel setBackgroundColor:[UIColor clearColor]];
     [button.titleLabel setTextAlignment:NSTextAlignmentLeft];
     
-    [button.titleLabel setFont:[UIFont fontWithName:@"AdelleSans-Light" size:12]];
+    [button.titleLabel setFont:[UIFont fontWithName:@"AdelleSans-Bold" size:12]];
     [button.titleLabel setShadowColor:[UIColor blackColor]];
     [button.titleLabel setShadowOffset:CGSizeMake(1, 1)];
     
@@ -130,7 +132,7 @@
     UILabel *dateLabel = [UILabel new];
     
     [dateLabel setAutoresizingMask:UIViewAutoresizingFlexibleLeftMargin];
-    [dateLabel setFont:[UIFont fontWithName:@"HelveticaNeue-Medium" size:12]];
+    [dateLabel setFont:[UIFont fontWithName:@"AdelleSans-Light" size:12]];
     [dateLabel setTextColor:[UIColor colorWithWhite:0.8 alpha:1]];
     [dateLabel setShadowColor:[UIColor colorWithWhite:0 alpha:0.5]];
     [dateLabel setShadowOffset:CGSizeMake(0, 1)];
@@ -159,9 +161,10 @@
     if([comment respondsToSelector:@selector(authorAvatar)]){
         [self.authorAvatar sd_setImageWithURL:[NSURL URLWithString:[comment authorAvatar]]];
         [self.authorAvatar.layer setMasksToBounds:YES];
+        [self.authorAvatar setContentMode:UIViewContentModeScaleAspectFill];
         [self.authorAvatar.layer setRasterizationScale:[UIScreen mainScreen].scale];
         [self.authorAvatar.layer setShouldRasterize:YES];
-        [self.authorAvatar.layer setCornerRadius:5.0];
+        [self.authorAvatar.layer setCornerRadius:imageSize/2];
     }
     
     if([comment respondsToSelector:@selector(attributedCommentText)] &&
