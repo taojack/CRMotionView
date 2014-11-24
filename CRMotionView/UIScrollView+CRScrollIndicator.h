@@ -8,9 +8,12 @@
 
 #import <UIKit/UIKit.h>
 
+#define BACKGROUND_VIEW_SCROLL_INDICTATOR @"BACKGROUND_VIEW_SCROLL_INDICTATOR"
+#define VIEW_SCROLL_INDICTATOR            @"VIEW_SCROLL_INDICTATOR"
+
 @interface UIScrollView (CRScrollIndicator)
 
-- (void)cr_enableScrollIndicator;
+- (NSMutableDictionary*)cr_enableScrollIndicatorInCurrentView:(BOOL)inCurrentView;
 - (void)cr_disableScrollIndicator;
 - (void)cr_refreshScrollIndicator;
 

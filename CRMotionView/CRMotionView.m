@@ -39,6 +39,8 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
     self = [super initWithFrame:frame];
     if (self) {
         _viewFrame = CGRectMake(0.0, 0.0, CGRectGetWidth(frame), CGRectGetHeight(frame));
+        _scrollIndicatorEnabled = YES;
+        _scrollIndicatorAtParentView = YES;
         [self commonInit];
         
     }
@@ -77,14 +79,11 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
 
     
     _minimumXOffset = 0;
-    
-    _motionEnabled = YES;
     _zoomEnabled   = YES;
-    [self startMonitoring];
-    
     // Tap gesture to open zoomable view
     UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
     [self addGestureRecognizer:tapGesture];
+    [self setMotionEnabled:YES];
 }
 
 
@@ -103,9 +102,6 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
         
         // Stop motion to avoid transition jump between two views
 //        [self stopMonitoring];
-        
-       
-        
         // Init and setup the zoomable scroll view
         self.zoomScrollView = [[CRZoomScrollView alloc] initFromScrollView:self.scrollView withImage:imageView.image];
         self.zoomScrollView.zoomDelegate = self;
@@ -113,7 +109,6 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
         [self addSubview:self.zoomScrollView];
     }
 }
-
 
 #pragma mark - Setters
 
@@ -127,12 +122,11 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
     [contentView setFrame:CGRectMake(0, 0, width, _viewFrame.size.height)];
 
     [_containerView addSubview:contentView];
-    [self setScrollIndicatorEnabled:_scrollIndicatorEnabled];
     
     _scrollView.contentSize = CGSizeMake(contentView.frame.size.width, _scrollView.frame.size.height);
     _scrollView.contentOffset = CGPointMake((_scrollView.contentSize.width - _scrollView.frame.size.width) / 2, 0);
     
-    [_scrollView cr_enableScrollIndicator];
+    [self setScrollIndicatorEnabled:_scrollIndicatorEnabled];
     
     _motionRate = contentView.frame.size.width / _viewFrame.size.width * CRMotionViewRotationFactor;
     _maximumXOffset = _scrollView.contentSize.width - _scrollView.frame.size.width;
@@ -142,10 +136,14 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
 
 - (void)setImage:(UIImage *)image
 {
-    _image = image;
-
-    UIImageView *imageView = [[UIImageView alloc] initWithImage:image];
-    [self setContentView:imageView];
+    if (image) {
+        _image = image;
+        
+        UIImageView *imageView = [[UIImageView alloc] initWithImage:image];
+        [self setContentView:imageView];
+    } else {
+        _image = nil;
+    }
 }
 
 - (void)setMotionEnabled:(BOOL)motionEnabled
@@ -162,7 +160,11 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
 {
     _scrollIndicatorEnabled = scrollIndicatorEnabled;
     if (scrollIndicatorEnabled) {
-        [_scrollView cr_enableScrollIndicator];
+        NSDictionary *dict = [_scrollView cr_enableScrollIndicatorInCurrentView:!_scrollIndicatorAtParentView];
+        if (!_backgroundViewScrollIndicator) {
+            _backgroundViewScrollIndicator = [dict objectForKey:BACKGROUND_VIEW_SCROLL_INDICTATOR];
+            _viewScrollIndicator = [dict objectForKey:VIEW_SCROLL_INDICTATOR];
+        }
     } else {
         [_scrollView cr_disableScrollIndicator];
     }
@@ -183,6 +185,19 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
     self.stopTracking = NO;
 }
 
+- (void)positionIndictatorToForegroundView:(UIView*)foregroundView originY:(NSUInteger)originY
+{
+    [_scrollView cr_refreshScrollIndicator];
+    [_backgroundViewScrollIndicator setFrame:CGRectMake(_backgroundViewScrollIndicator.frame.origin.x, originY, _backgroundViewScrollIndicator.frame.size.width, _backgroundViewScrollIndicator.frame.size.height)];
+    [_viewScrollIndicator setFrame:CGRectMake(_viewScrollIndicator.frame.origin.x, originY, _viewScrollIndicator.frame.size.width, _viewScrollIndicator.frame.size.height)];
+    
+    for (UIView *view in [foregroundView subviews]) {
+        if (view == _backgroundViewScrollIndicator)
+            return;
+    }
+    [foregroundView addSubview:_backgroundViewScrollIndicator];
+    [foregroundView addSubview:_viewScrollIndicator];
+}
 
 #pragma mark - Core Motion
 
@@ -222,7 +237,6 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
                                                                  }
                                                                  completion:nil];
                                             }
-                                            
                                         }
                                     }];
     } else {

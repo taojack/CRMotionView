@@ -14,10 +14,14 @@
 @property (nonatomic, strong) UIView   *contentView;
 @property (nonatomic, assign, getter = isMotionEnabled) BOOL motionEnabled;
 @property (nonatomic, assign, getter = isScrollIndicatorEnabled) BOOL scrollIndicatorEnabled;
+@property (nonatomic, assign, getter = isScrollIndicatorAtParentView) BOOL scrollIndicatorAtParentView;
 @property (nonatomic, assign, getter = isZoomEnabled) BOOL zoomEnabled;
 
+@property (nonatomic, strong) UIView *backgroundViewScrollIndicator;
+@property (nonatomic, strong) UIView *viewScrollIndicator;
 
 - (instancetype)initWithFrame:(CGRect)frame image:(UIImage *)image;
 - (instancetype)initWithFrame:(CGRect)frame contentView:(UIView *)contentView;
+- (void)positionIndictatorToForegroundView:(UIView*)foregroundView originY:(NSUInteger)originY;
 
 @end

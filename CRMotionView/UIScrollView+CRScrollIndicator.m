@@ -42,7 +42,7 @@ static const CGFloat CRScrollIndicatorLeftRightThreshold = 16.0f;
 
 #pragma mark - Class methods
 
-- (void)cr_enableScrollIndicator
+- (NSDictionary* )cr_enableScrollIndicatorInCurrentView:(BOOL)inCurrentView
 {
     if (![self cr_getBackgroundViewForScrollIndicator] && ![self cr_getViewForScrollIndicator])
     {
@@ -55,7 +55,6 @@ static const CGFloat CRScrollIndicatorLeftRightThreshold = 16.0f;
         UIView *backgroundViewScrollIndicator = [[UIView alloc] initWithFrame:backgroundIndicatorFrame];
         [backgroundViewScrollIndicator setBackgroundColor:[indicatorColor colorWithAlphaComponent:0.50]];
         [self cr_setBackgroundViewForScrollIndicator:backgroundViewScrollIndicator];
-        [self addSubview:backgroundViewScrollIndicator];
         
         // Configure the scroll indicator
         CGFloat viewScrollIndicatorWidth = (self.bounds.size.width - (CRScrollIndicatorLeftRightThreshold * 2)) * (self.bounds.size.width - (CRScrollIndicatorLeftRightThreshold * 2)) / self.contentSize.width;
@@ -66,10 +65,33 @@ static const CGFloat CRScrollIndicatorLeftRightThreshold = 16.0f;
         UIView *viewScrollIndicator = [[UIView alloc] initWithFrame:frame];
         [viewScrollIndicator setBackgroundColor:[indicatorColor colorWithAlphaComponent:1.0f]];
         [self cr_setViewForScrollIndicator:viewScrollIndicator];
-        [self addSubview:viewScrollIndicator];
+        
+        if (inCurrentView) {
+            [self addSubview:backgroundViewScrollIndicator];
+            [self addSubview:viewScrollIndicator];
+        }
         
         [self cr_setupObservers];
+    } else {
+        //Add this because we are reusing CRMotionView
+        UIView *backgroundViewScrollIndicator = [self cr_getBackgroundViewForScrollIndicator];
+        CGFloat backgroundIndicatorWidth = self.frame.size.width - (CRScrollIndicatorLeftRightThreshold * 2);
+        CGRect backgroundIndicatorFrame = CGRectMake(self.contentOffset.x + (self.frame.size.width / 2) - (backgroundIndicatorWidth / 2), self.frame.size.height - CRScrollIndicatorHeight - CRScrollIndicatorBottomSpace, backgroundIndicatorWidth, CRScrollIndicatorHeight);
+        [backgroundViewScrollIndicator setFrame:backgroundIndicatorFrame];
+        
+        UIView *viewScrollIndicator = [self cr_getViewForScrollIndicator];
+        CGFloat viewScrollIndicatorWidth = (self.bounds.size.width - (CRScrollIndicatorLeftRightThreshold * 2)) * (self.bounds.size.width - (CRScrollIndicatorLeftRightThreshold * 2)) / self.contentSize.width;
+        if (viewScrollIndicatorWidth < CRScrollIndicatorDefaultWidth) {
+            viewScrollIndicatorWidth = CRScrollIndicatorDefaultWidth;
+        }
+        CGRect frame = CGRectMake(self.contentOffset.x + (self.frame.size.width / 2) - (viewScrollIndicatorWidth / 2), self.frame.size.height - CRScrollIndicatorHeight - CRScrollIndicatorBottomSpace, viewScrollIndicatorWidth, CRScrollIndicatorHeight);
+        [viewScrollIndicator setFrame:frame];
     }
+    
+    NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
+    [dict setObject:[self cr_getBackgroundViewForScrollIndicator] forKeyedSubscript:BACKGROUND_VIEW_SCROLL_INDICTATOR];
+    [dict setObject:[self cr_getViewForScrollIndicator] forKeyedSubscript:VIEW_SCROLL_INDICTATOR];
+    return dict;
 }
 
 - (void)cr_refreshScrollIndicator
@@ -82,7 +104,8 @@ static const CGFloat CRScrollIndicatorLeftRightThreshold = 16.0f;
 {
     UIView *backgroundViewScrollIndicator = [self cr_getBackgroundViewForScrollIndicator];
     CGRect rect =  backgroundViewScrollIndicator.frame;
-    CGFloat x = self.contentOffset.x + CRScrollIndicatorLeftRightThreshold;
+//    CGFloat x = self.contentOffset.x + CRScrollIndicatorLeftRightThreshold;
+    CGFloat x = CRScrollIndicatorLeftRightThreshold;
     rect.origin.x = x;
     backgroundViewScrollIndicator.frame = rect;
 }
@@ -92,7 +115,8 @@ static const CGFloat CRScrollIndicatorLeftRightThreshold = 16.0f;
     UIView *viewScrollIndicator = [self cr_getViewForScrollIndicator];
     CGRect rect =  viewScrollIndicator.frame;
     CGFloat percent = self.contentOffset.x / self.contentSize.width;
-    CGFloat x = self.contentOffset.x + ((self.bounds.size.width - CRScrollIndicatorLeftRightThreshold) * percent) + CRScrollIndicatorLeftRightThreshold;
+//    CGFloat x = self.contentOffset.x + ((self.bounds.size.width - CRScrollIndicatorLeftRightThreshold) * percent) + CRScrollIndicatorLeftRightThreshold;
+    CGFloat x = ((self.bounds.size.width - CRScrollIndicatorLeftRightThreshold) * percent) + CRScrollIndicatorLeftRightThreshold;
     rect.origin.x = x;
     viewScrollIndicator.frame = rect;
 }
