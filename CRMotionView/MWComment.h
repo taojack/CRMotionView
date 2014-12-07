@@ -21,5 +21,6 @@
 @property (strong) PFUser *user;
 @property (strong) UIImage *image;
 @property (strong) NSDictionary *metaData;
+@property (strong) PFObject *object;
 
 @end

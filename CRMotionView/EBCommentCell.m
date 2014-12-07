@@ -91,7 +91,7 @@
     [button.titleLabel setBackgroundColor:[UIColor clearColor]];
     [button.titleLabel setTextAlignment:NSTextAlignmentLeft];
     
-    [button.titleLabel setFont:[UIFont fontWithName:@"AdelleSans-Bold" size:12]];
+    [button.titleLabel setFont:[UIFont fontWithName:@"AdelleSans-Bold" size:13]];
     [button.titleLabel setShadowColor:[UIColor blackColor]];
     [button.titleLabel setShadowOffset:CGSizeMake(1, 1)];
     
@@ -117,7 +117,7 @@
     [textLabel setBackgroundColor:[UIColor clearColor]];
     [textLabel setNumberOfLines:10000];
     
-    [textLabel setFont:[UIFont fontWithName:@"AdelleSans-Light" size:12]];
+    [textLabel setFont:[UIFont fontWithName:@"AdelleSans-Light" size:13]];
     [textLabel setShadowColor:[UIColor blackColor]];
     [textLabel setShadowOffset:CGSizeMake(1, 1)];
     
@@ -156,6 +156,10 @@
     if([comment respondsToSelector:@selector(authorName)]){
         [self.authorNameButton setTitle:[comment authorName]
                            forState:UIControlStateNormal];
+        CGRect rectFrame = self.authorNameButton.frame;
+        [self.authorNameButton sizeToFit];
+        rectFrame.size.width = self.authorNameButton.frame.size.width;
+        self.authorNameButton.frame = rectFrame;
     }
     
     if([comment respondsToSelector:@selector(authorAvatar)]){

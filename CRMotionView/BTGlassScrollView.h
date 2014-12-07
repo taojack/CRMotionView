@@ -31,7 +31,7 @@
 #define LEFT_ICON_PADDING  15
 #define LEFT_SMALL_ICON_PADDING  LEFT_ICON_PADDING+8
 
-#define METERS_PER_MILE 1609.344
+#define METERS_PER_MILE 3209.344
 
 @protocol BTGlassScrollViewDelegate;
 

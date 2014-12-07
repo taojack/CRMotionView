@@ -13,8 +13,9 @@
 
 #import <UIKit/UIKit.h>
 #import "EBPhotoCommentProtocol.h"
+#import <MGSwipeTableCell.h>
 
-@interface EBCommentCell : UITableViewCell
+@interface EBCommentCell : MGSwipeTableCell
 
 @property (weak) UIImageView *authorAvatar;
 @property (weak) UIButton *authorNameButton;

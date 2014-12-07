@@ -16,6 +16,7 @@
 #import "EBCommentCell.h"
 #import "EBCommentsTableView.h"
 #import "MWComment.h"
+#import "MGSwipeButton.h"
 #import <Parse.h>
 #import <MapKit/MapKit.h>
 #import <InstagramEngine.h>
@@ -44,6 +45,7 @@
     UIButton *likeButton;
     UIButton *shareButton;
     UIButton *commentButton;
+    UIButton *descriptionEditButton;
     UIButton *actionButton;
     UIView *descriptionBox;
     UIView *commentBox;
@@ -351,7 +353,7 @@
                         ((MWPhoto*)self.photo).userLikeObject = nil;
                     } else {
                         photo[@"likeCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"likeCount"]) intValue] + 1];
-                        [likeButton setImage:[UIImage imageNamed:@"LikeRed"] forState:UIControlStateNormal];
+                        [likeButton setImage:[UIImage imageNamed:@"LikeRed2"] forState:UIControlStateNormal];
                         [likeCount setText:photo[@"likeCount"] ?: @"0"];
                         [likeCount sizeToFit];
                     }
@@ -365,7 +367,7 @@
         userLikeObject[@"user"] = [PFUser currentUser];
         userLikeObject[@"photo"] = photo;
         userLikeObject[@"like"] = [NSNumber numberWithBool:YES];
-        [likeButton setImage:[UIImage imageNamed:@"LikeRed"] forState:UIControlStateNormal];
+        [likeButton setImage:[UIImage imageNamed:@"LikeRed2"] forState:UIControlStateNormal];
         [likeCount setText:photo[@"likeCount"] ?: @"0"];
         [likeCount sizeToFit];
         [userLikeObject saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
@@ -471,7 +473,7 @@
     }
     
     if (((MWPhoto*)self.photo).userLikeObject) {
-        [likeButton setImage:[UIImage imageNamed:@"LikeRed"] forState:UIControlStateNormal];
+        [likeButton setImage:[UIImage imageNamed:@"LikeRed2"] forState:UIControlStateNormal];
     } else {
         [likeButton setImage:[UIImage imageNamed:@"Like"] forState:UIControlStateNormal];
     }
@@ -538,27 +540,46 @@
     frame.origin.x = frame.origin.x - frame.size.width;
     commentCount.frame = frame;
     
+    PFUser *currentUser = [PFUser currentUser];
     if (!description) {
         
         descriptionBox = [[UIView alloc] initWithFrame:CGRectMake(PADDING, commentCount.frame.origin.y + commentCount.frame.size.height + PADDING*4, [[UIScreen mainScreen] bounds].size.width - PADDING*2, 0)];
         descriptionBox.layer.cornerRadius = 3;
         descriptionBox.backgroundColor = [UIColor colorWithWhite:0 alpha:.3];
         
-        UITapGestureRecognizer *_tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(descriptionTapped:)];
-        [descriptionBox addGestureRecognizer:_tapRecognizer];
+        if ([currentUser.objectId isEqualToString:[_parentView getPhotoBrowser].profileUser.objectId]) {
+            UITapGestureRecognizer *_tapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(descriptionTapped:)];
+            [descriptionBox addGestureRecognizer:_tapRecognizer];
+            
+            descriptionEditButton = [[UIButton alloc] initWithFrame:CGRectMake(CGRectGetWidth(self.bounds) - 35, PADDING*2, 0, 0)];
+            [descriptionEditButton setImage:[UIImage imageNamed:@"PenWhite"] forState:UIControlStateNormal];
+            [descriptionEditButton sizeToFit];
+            CGRect frame = descriptionEditButton.frame;
+            frame.size = CGSizeMake(frame.size.width/2, frame.size.height/2);
+            descriptionEditButton.frame = frame;
+            
+            description = [[UILabel alloc] initWithFrame:CGRectMake(PADDING, PADDING*2, descriptionEditButton.frame.origin.x - PADDING*2, 0)];
+            
+            [descriptionBox addSubview:descriptionEditButton];
+        } else {
+            description = [[UILabel alloc] initWithFrame:CGRectMake(PADDING, PADDING*2, [[UIScreen mainScreen] bounds].size.width - PADDING*4, 0)];
+        }
         
-        description = [[UILabel alloc] initWithFrame:CGRectMake(PADDING, PADDING*2, [[UIScreen mainScreen] bounds].size.width - PADDING*4, 0)];
         [description setFont:[UIFont fontWithName:@"AdelleSans-Light" size:12]];
         [description setTextColor:[UIColor whiteColor]];
         [description setShadowColor:[UIColor blackColor]];
         [description setShadowOffset:CGSizeMake(1, 1)];
         [description setNumberOfLines:0];
-
+        
         [descriptionBox addSubview:description];
         [_foregroundView addSubview:descriptionBox];
     } else {
+        if ([currentUser.objectId isEqualToString:[_parentView getPhotoBrowser].profileUser.objectId]) {
+            [description setFrame:CGRectMake(PADDING, PADDING*2, descriptionEditButton.frame.origin.x - PADDING*2, 0)];
+        } else {
+            [description setFrame:CGRectMake(PADDING, PADDING*2, [[UIScreen mainScreen] bounds].size.width - PADDING*4, 0)];
+        }
         [descriptionBox setFrame:CGRectMake(PADDING, commentCount.frame.origin.y + commentCount.frame.size.height + PADDING*4, [[UIScreen mainScreen] bounds].size.width - PADDING*2, 0)];
-        [description setFrame:CGRectMake(PADDING, PADDING*2, [[UIScreen mainScreen] bounds].size.width - PADDING*4, 0)];
     }
     
     [description setText:((MWPhoto*)self.photo).photoDescription ?: @"No Description"];
@@ -568,9 +589,7 @@
     descriptionBox.frame = frame;
     
     MKMapView *mapView = [InstagramEngine sharedEngine].mapView;
-//    [mapView removeFromSuperview];
     [mapView setFrame:CGRectMake(PADDING, descriptionBox.frame.origin.y + descriptionBox.frame.size.height + PADDING*4, [[UIScreen mainScreen] bounds].size.width - PADDING*2, 150)];
-//    [_foregroundView addSubview:mapView];
     
     CLLocationCoordinate2D picLocation;
     picLocation.latitude = [((MWPhoto*)self.photo).latitude floatValue];
@@ -583,15 +602,14 @@
     [mapView addAnnotation:locationAnnotation];
     
 #warning TODO: rewrite EBCommentView so this commentView doesn't get recreated everytime
-// Also need to calculate the height more efficiently
-// Potentially memory leak problem
-// Add maximum height so it will get more comments that way
     [commentView removeFromSuperview];
-    commentView = [[EBCommentsView alloc] initWithFrame:CGRectMake(0, 0, 310, ((MWPhoto*)self.photo).comments.count * 64.08 + 40)];
+    [self getHeightForCommentBox];
+    CGFloat totalCommentRowHeight = [self getHeightForCommentBox];
+    commentView = [[EBCommentsView alloc] initWithFrame:CGRectMake(0, 0, 310, totalCommentRowHeight + 40)];
     [commentView setAutoresizingMask:UIViewAutoresizingFlexibleWidth];
     [commentView.tableView setDataSource:self];
     [commentView.tableView setDelegate:self];
-    [commentView.tableView setScrollEnabled:NO];
+    [commentView.tableView setScrollEnabled:totalCommentRowHeight >= 350];
     [commentView setCommentCellHighlightColor:[UIColor colorWithWhite:0.99 alpha:0.35]];
     
     static NSString *CellReuseIdentifier= @"Cell";
@@ -621,6 +639,29 @@
     _foregroundView.frame = frame;
     
     return _foregroundView;
+}
+
+#warning TODO: Duplicate from 
+//1, EBCommentCell:loadCommentTextLabel
+//2, BTGlassScrollView:heightForRowAtIndexPath
+- (CGFloat)getHeightForCommentBox
+{
+    CGFloat totalHeight = 0.0f;
+    const CGFloat MinimumRowHeight = 60;
+    const CGFloat maxHeight = 350.0;
+    for (MWComment* comment in ((MWPhoto*)self.photo).comments) {
+        CGFloat rowHeight = 0;
+        CGRect textViewSize = [comment.text boundingRectWithSize:CGSizeMake(245, 500) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName:[UIFont fontWithName:@"AdelleSans-Light" size:13]} context:nil];
+        CGFloat textViewHeight = 25;
+        const CGFloat additionalSpace = MinimumRowHeight - textViewHeight + 10;
+        
+        rowHeight = textViewSize.size.height + additionalSpace;
+        totalHeight += rowHeight;
+        if (totalHeight > maxHeight) {
+            return maxHeight;
+        }
+    }
+    return totalHeight;
 }
 
 - (void)createForegroundView
@@ -722,7 +763,17 @@
 - (void)descriptionTapped:(UITapGestureRecognizer *)tapRecognizer
 {
     // NOTE: maxCount = 0 to hide count
+    NSString *originalText = nil;
+    if ([[tapRecognizer.view subviews][0] isKindOfClass:[UILabel class]]) {
+        UILabel *textLabel = [tapRecognizer.view subviews][0];
+        if (![textLabel.text isEqualToString:@"No Description"]) {
+            originalText = textLabel.text;
+        }
+    }
     YIPopupTextView* popupTextView = [[YIPopupTextView alloc] initWithPlaceHolder:@"Enter your story" maxCount:1000 buttonStyle:YIPopupTextViewButtonStyleRightCancelAndDone];
+    if (originalText) {
+        popupTextView.text = originalText;
+    }
     popupTextView.delegate = self;
     popupTextView.caretShiftGestureEnabled = YES;   // default = NO
     
@@ -816,6 +867,7 @@
     NSIndexPath *indexPath = [commentView.tableView indexPathForCell:cell];
     
     if(indexPath) {
+        id<EBPhotoCommentProtocol>deletedComment = ((MWPhoto*)self.photo).comments[indexPath.row];
         NSMutableArray *remainingComments = [NSMutableArray arrayWithArray:((MWPhoto*)self.photo).comments];
         [remainingComments removeObjectAtIndex:indexPath.row];
         ((MWPhoto*)self.photo).comments = [NSMutableArray arrayWithArray:remainingComments];
@@ -825,7 +877,6 @@
                                            withRowAnimation:UITableViewRowAnimationLeft];
         [commentView.tableView endUpdates];
     
-        id<EBPhotoCommentProtocol>deletedComment = ((MWPhoto*)self.photo).comments[indexPath.row];
         [self.delegate2 photoViewController:self didDeleteComment:deletedComment];
         
         [commentView.tableView reloadData];
@@ -848,10 +899,43 @@
 {
     static NSString *CellIdentifier = @"Cell";
     EBCommentCell *cell = [tableView dequeueReusableCellWithIdentifier:CellIdentifier forIndexPath:indexPath];
-    
     id <EBPhotoCommentProtocol> comment = ((MWPhoto*)self.photo).comments[indexPath.row];
     NSAssert([comment conformsToProtocol:@protocol(EBPhotoCommentProtocol)],
              @"Comment objects must conform to the EBPhotoCommentProtocol.");
+    
+    //configure right buttons
+    NSMutableArray *rightButtons = [[NSMutableArray alloc] init];
+    MGSwipeButton *deleteButton = [MGSwipeButton buttonWithTitle:@"Delete" backgroundColor:[UIColor redColor] callback:^BOOL(MGSwipeTableCell *sender) {
+        [((MWComment*)comment).object deleteInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
+            NSMutableArray *remainingComments = [NSMutableArray arrayWithArray:((MWPhoto*)self.photo).comments];
+            [remainingComments removeObjectAtIndex:indexPath.row];
+            ((MWPhoto*)self.photo).comments = [NSMutableArray arrayWithArray:remainingComments];
+            [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [self loadCommentsForScrollView];
+        }];
+        return YES;
+    }];
+    MGSwipeButton *reportButton = [MGSwipeButton buttonWithTitle:@"Report" backgroundColor:[UIColor lightGrayColor] callback:^BOOL(MGSwipeTableCell *sender) {
+        [[[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Success", nil)
+                                    message:@"Thank you for your feedback"
+                                   delegate:nil
+                          cancelButtonTitle:NSLocalizedString(@"OK", nil)
+                          otherButtonTitles:nil] show];
+        return YES;
+    }];
+    if ([[_parentView getPhotoBrowser].profileUser.objectId isEqualToString:[PFUser currentUser].objectId]) {
+        [rightButtons addObject:deleteButton];
+        [rightButtons addObject:reportButton];
+    } else if ([((MWComment*)comment).user.objectId isEqualToString:[PFUser currentUser].objectId]) {
+        [rightButtons addObject:deleteButton];
+        [rightButtons addObject:reportButton];
+    } else {
+        [rightButtons addObject:reportButton];
+    }
+    cell.rightButtons = rightButtons;
+    cell.rightSwipeSettings.transition = MGSwipeTransitionClipCenter;
+    cell.swipeBackgroundColor = [UIColor clearColor];
+    
     [self configureCell:cell
          atRowIndexPath:indexPath
             withComment:comment];
@@ -886,7 +970,7 @@
      CGSize textViewSize = textViewRect.size;
      */
     
-    CGRect textViewSize = [textForRow boundingRectWithSize:CGSizeMake(285, 1000) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName: [UIFont fontWithName:@"HelveticaNeue-Bold" size:16]} context:nil];
+    CGRect textViewSize = [textForRow boundingRectWithSize:CGSizeMake(245, 500) options:NSStringDrawingUsesLineFragmentOrigin attributes:@{NSFontAttributeName: [UIFont fontWithName:@"AdelleSans-Light" size:13]} context:nil];
     CGFloat textViewHeight = 25;
     const CGFloat additionalSpace = MinimumRowHeight - textViewHeight + 10;
     
@@ -968,12 +1052,12 @@
 - (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath
 {
     if (editingStyle == UITableViewCellEditingStyleDelete) {
+        id<EBPhotoCommentProtocol>deletedComment = ((MWPhoto*)self.photo).comments[indexPath.row];
         NSMutableArray *remainingComments = [NSMutableArray arrayWithArray:((MWPhoto*)self.photo).comments];
         [remainingComments removeObjectAtIndex:indexPath.row];
         ((MWPhoto*)self.photo).comments = [NSMutableArray arrayWithArray:remainingComments];
         
         [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
-        id<EBPhotoCommentProtocol>deletedComment = ((MWPhoto*)self.photo).comments[indexPath.row];
         [self.delegate2 photoViewController:self didDeleteComment:deletedComment];
     }
     else if (editingStyle == UITableViewCellEditingStyleInsert) {
@@ -1005,6 +1089,7 @@
             comment.text = commentObject[@"comment"];
             comment.date = commentObject.createdAt;
             comment.user = commentObject[@"user"];
+            comment.object = commentObject;
             if (!((MWPhoto*)self.photo).comments) {
                 ((MWPhoto*)self.photo).comments = [[NSMutableArray alloc] init];
             }
@@ -1026,8 +1111,13 @@
 - (BOOL)photoViewController:(BTGlassScrollView *)controller
            canDeleteComment:(id<EBPhotoCommentProtocol>)comment
 {
-    #warning TODO: current users and profile match
-    return YES;
+//    if ([((MWComment*)comment).user.objectId isEqualToString:[PFUser currentUser].objectId]) {
+//        return YES;
+//    }
+//    if ([[_parentView getPhotoBrowser].profileUser.objectId isEqualToString:[PFUser currentUser].objectId]) {
+//        return YES;
+//    }
+    return NO;
 }
 
 - (void)photoViewController:(BTGlassScrollView *)controller
