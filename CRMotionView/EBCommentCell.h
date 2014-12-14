@@ -14,11 +14,13 @@
 #import <UIKit/UIKit.h>
 #import "EBPhotoCommentProtocol.h"
 #import <MGSwipeTableCell.h>
+#import <PLSUserImageView.h>
+#import <PLSUserButton.h>
 
 @interface EBCommentCell : MGSwipeTableCell
 
-@property (weak) UIImageView *authorAvatar;
-@property (weak) UIButton *authorNameButton;
+@property (weak) PLSUserImageView *authorAvatar;
+@property (weak) PLSUserButton *authorNameButton;
 @property (weak) UILabel *commentTextLabel;
 @property (weak) UILabel *dateLabel;
 @property (strong, nonatomic) UIColor *highlightColor;

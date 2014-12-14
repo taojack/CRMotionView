@@ -74,15 +74,14 @@
 
 - (void)loadAuthorAvatar
 {
-    UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(10, 5, imageSize, imageSize)];
-    [self.imageView setContentMode:UIViewContentModeScaleAspectFill];
+    PLSUserImageView *imageView = [[PLSUserImageView alloc] initWithFrame:CGRectMake(10, 5, imageSize, imageSize)];
     [self addSubview:imageView];
     [self setAuthorAvatar:imageView];
 }
 
 - (void)loadAuthorNameButton
 {
-    UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
+    PLSUserButton *button = [PLSUserButton buttonWithType:UIButtonTypeCustom];
     
     [button.titleLabel setFont:[UIFont fontWithName:@"HelveticaNeue-Medium" size:12]];
     [button.titleLabel setTextColor:[UIColor colorWithWhite:0.8 alpha:1]];
@@ -187,6 +186,12 @@
         NSDateFormatter *dateFormatter = [self dateFormatter];
         NSString *dateString = [dateFormatter stringFromDate:postDate];
         [self.dateLabel setText:dateString];
+    }
+    
+    if([comment respondsToSelector:@selector(metaInfo)]){
+        NSDictionary *metaInfo = [comment metaInfo];
+        self.authorAvatar.user = [metaInfo objectForKey:@"user"];
+        self.authorNameButton.user = [metaInfo objectForKey:@"user"];
     }
     
 }

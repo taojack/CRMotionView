@@ -13,6 +13,7 @@
 
 
 #import <Foundation/Foundation.h>
+#import "Parse.h"
 
 /*
  The EBPhotoCommentProtocol should be implemented by an object

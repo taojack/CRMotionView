@@ -59,4 +59,10 @@
     return self.user[@"pic_url"];
 }
 
+- (NSDictionary *)metaInfo
+{
+    NSDictionary *dict = [[NSDictionary alloc] initWithObjectsAndKeys:self.user, @"user", nil];
+    return dict;
+}
+
 @end

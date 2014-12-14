@@ -51,6 +51,8 @@
     UIView *commentBox;
     EBCommentsView *commentView;
     UIButton *editDescriptionButton;
+    
+    CGSize backButtonSize;
 }
 
 - (id)initWithFrame:(CGRect)frame BackgroundImage:(UIImage *)backgroundImage blurredImage:(UIImage *)blurredImage viewDistanceFromBottom:(CGFloat)viewDistanceFromBottom foregroundView:(UIView *)foregroundView parentView:(MWZoomingScrollView*)parentView
@@ -367,6 +369,8 @@
         userLikeObject[@"user"] = [PFUser currentUser];
         userLikeObject[@"photo"] = photo;
         userLikeObject[@"like"] = [NSNumber numberWithBool:YES];
+        userLikeObject[@"type"] = @"like";
+        userLikeObject[@"userTo"] = photo[@"user"];
         [likeButton setImage:[UIImage imageNamed:@"LikeRed2"] forState:UIControlStateNormal];
         [likeCount setText:photo[@"likeCount"] ?: @"0"];
         [likeCount sizeToFit];
@@ -906,11 +910,18 @@
     //configure right buttons
     NSMutableArray *rightButtons = [[NSMutableArray alloc] init];
     MGSwipeButton *deleteButton = [MGSwipeButton buttonWithTitle:@"Delete" backgroundColor:[UIColor redColor] callback:^BOOL(MGSwipeTableCell *sender) {
+        PFObject * photo = ((MWPhoto*)self.photo).object;
         [((MWComment*)comment).object deleteInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
+            photo[@"commentCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"commentCount"]) intValue] - 1];
+            
             NSMutableArray *remainingComments = [NSMutableArray arrayWithArray:((MWPhoto*)self.photo).comments];
             [remainingComments removeObjectAtIndex:indexPath.row];
             ((MWPhoto*)self.photo).comments = [NSMutableArray arrayWithArray:remainingComments];
+            ((MWPhoto*)self.photo).commentCount = photo[@"commentCount"];
+            //[NSString stringWithFormat:@"%d", [(NSString*)((MWPhoto*)self.photo).commentCount intValue] - 1];
             [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+            [photo saveEventually];
+            
             [self loadCommentsForScrollView];
         }];
         return YES;
@@ -1083,6 +1094,8 @@
     commentObject[@"user"] = [PFUser currentUser];
     commentObject[@"photo"] = photo;
     commentObject[@"comment"] = comment;
+    commentObject[@"type"] = @"comment";
+    commentObject[@"userTo"] = photo[@"user"];
     [commentObject saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
         if (!error) {
             MWComment *comment = [[MWComment alloc] init];
@@ -1133,6 +1146,12 @@
  shouldConfigureCommentCell:(EBCommentCell *)cell
           forRowAtIndexPath:(NSIndexPath *)indexPath
                 withComment:(id<EBPhotoCommentProtocol>)comment {
+    [cell.authorAvatar setUserInteractionEnabled:YES];
+    cell.authorAvatar.browser = [_parentView getPhotoBrowser];
+    [cell.authorAvatar addGestureRecognizer:[[UITapGestureRecognizer alloc]initWithTarget:[_parentView getPhotoBrowser].delegate action:@selector(didTapUserButtonAction:)]];
+    
+    cell.authorNameButton.browser = [_parentView getPhotoBrowser];
+    [cell.authorNameButton addTarget:[_parentView getPhotoBrowser].delegate action:@selector(didTapUserButtonAction:) forControlEvents:UIControlEventTouchUpInside];
     return YES;
 }
 
@@ -1202,7 +1221,12 @@
                      }completion:nil];
     
     [_parentView.backButton removeTarget:[_parentView getPhotoBrowser] action:@selector(doneButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+    [_parentView.backButton setTitle:NSLocalizedString(@"Dismiss", @"Title for Done button") forState:UIControlStateNormal];
+    [_parentView.backButton setImage:nil forState:UIControlStateNormal];
     [_parentView.backButton addTarget:self action:@selector(doneButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+    [_parentView.backButton setTitleColor:[UIColor colorWithWhite:0.9 alpha:0.9] forState:UIControlStateNormal];
+    [_parentView.backButton setTitleColor:[UIColor colorWithWhite:0.9 alpha:0.9] forState:UIControlStateHighlighted];
+    [_parentView.backButton.titleLabel setFont:[UIFont boldSystemFontOfSize:12.0f]];
 }
 
 - (void)doneButtonPressed:(id)sender
@@ -1230,9 +1254,10 @@
                      }completion:nil];
     
     [_parentView.backButton addTarget:[_parentView getPhotoBrowser] action:@selector(doneButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+    UIImage *backImg = [UIImage imageNamed:@"BackArrow"];
+    [_parentView.backButton setImage:[UIImage imageWithCGImage:[backImg CGImage] scale:2.0 orientation:UIImageOrientationUp] forState:UIControlStateNormal];
+    [_parentView.backButton setTitle:NSLocalizedString(@"", @"Title for Done button") forState:UIControlStateNormal];
     [_parentView.backButton removeTarget:self action:@selector(doneButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
 }
-
-
 
 @end
