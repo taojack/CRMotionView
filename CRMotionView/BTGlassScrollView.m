@@ -358,6 +358,7 @@
                         [likeButton setImage:[UIImage imageNamed:@"LikeRed2"] forState:UIControlStateNormal];
                         [likeCount setText:photo[@"likeCount"] ?: @"0"];
                         [likeCount sizeToFit];
+#warning report incorrect likeCount to Flurry
                     }
                     [likeButton setUserInteractionEnabled:YES];
                 }];
@@ -828,10 +829,12 @@
                 if (![_backgroundImageView isMotionEnabled]) {
                     [_backgroundImageView setMotionEnabled:YES];
                 }
+                [[_parentView getPhotoBrowser] enablePagingScroll];
             } else {
                 if ([_backgroundImageView isMotionEnabled]) {
                     [_backgroundImageView setMotionEnabled:NO];
                 }
+                [[_parentView getPhotoBrowser] disablePagingScroll];
             }
         }
     }
@@ -1109,6 +1112,8 @@
             [((MWPhoto*)self.photo).comments addObject:comment];
             ((MWPhoto*)self.photo).commentCount = photo[@"commentCount"];
             [self loadCommentsForScrollView];
+        } else {
+#warning TODO update flurry with inconsistent comment count
         }
     }];
 }
