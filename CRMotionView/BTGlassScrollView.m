@@ -829,12 +829,10 @@
                 if (![_backgroundImageView isMotionEnabled]) {
                     [_backgroundImageView setMotionEnabled:YES];
                 }
-                [[_parentView getPhotoBrowser] enablePagingScroll];
             } else {
                 if ([_backgroundImageView isMotionEnabled]) {
                     [_backgroundImageView setMotionEnabled:NO];
                 }
-                [[_parentView getPhotoBrowser] disablePagingScroll];
             }
         }
     }
