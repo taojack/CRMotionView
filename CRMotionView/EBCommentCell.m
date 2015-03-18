@@ -16,6 +16,15 @@
 
 #define imageSize 40
 
+UIImage* ResizeProfileImage2(UIImage *image)
+{
+    CGRect rect = CGRectMake(0, 0, image.size.width, image.size.width);
+    CGImageRef imageRef = CGImageCreateWithImageInRect([image CGImage], rect);
+    UIImage *croppedImage = [UIImage imageWithCGImage:imageRef];
+    CGImageRelease(imageRef);
+    return croppedImage;
+}
+
 @implementation EBCommentCell
 
 - (id)init
@@ -162,7 +171,9 @@
     }
     
     if([comment respondsToSelector:@selector(authorAvatar)]){
-        [self.authorAvatar sd_setImageWithURL:[NSURL URLWithString:[comment authorAvatar]]];
+        [self.authorAvatar sd_setImageWithURL:[NSURL URLWithString:[comment authorAvatar]] completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+            self.authorAvatar.image = ResizeProfileImage2(image);
+        }];
         [self.authorAvatar.layer setMasksToBounds:YES];
         [self.authorAvatar setContentMode:UIViewContentModeScaleAspectFill];
         [self.authorAvatar.layer setRasterizationScale:[UIScreen mainScreen].scale];
