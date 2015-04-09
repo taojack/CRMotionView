@@ -56,7 +56,7 @@
 //This is an image of the person who posted the comment
 - (NSString *)authorAvatar
 {
-    return self.user[@"pic_url"];
+    return self.user[@"profileThumbUrl"];
 }
 
 - (NSDictionary *)metaInfo

@@ -17,6 +17,9 @@
 #import <PLSUserImageView.h>
 #import <PLSUserButton.h>
 
+#define largeAvatarImageSize 40.0f
+#define smallAvatarImageSize 33.0f
+
 @interface EBCommentCell : MGSwipeTableCell
 
 @property (weak) PLSUserImageView *authorAvatar;

@@ -81,7 +81,7 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
     // Tap gesture to open zoomable view
     UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
     [tapGesture setNumberOfTouchesRequired : 2];
-    [self addGestureRecognizer:tapGesture];
+//    [self addGestureRecognizer:tapGesture];
     [self setMotionEnabled:YES];
 }
 
@@ -89,7 +89,7 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
 
 - (BOOL)isInZoom
 {
-    return self.zoomScrollView;
+    return (self.zoomScrollView != nil);
 }
 
 #pragma mark - UI actions

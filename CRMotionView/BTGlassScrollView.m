@@ -688,7 +688,7 @@
     
     UITapGestureRecognizer *doubleTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
     doubleTapRecognizer.numberOfTapsRequired = 2;
-    [_foregroundScrollView addGestureRecognizer:doubleTapRecognizer];
+//    [_foregroundScrollView addGestureRecognizer:doubleTapRecognizer];
     
     [singleTapRecognizer requireGestureRecognizerToFail:doubleTapRecognizer];
     

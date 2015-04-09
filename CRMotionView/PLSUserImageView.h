@@ -13,6 +13,6 @@
 @interface PLSUserImageView : UIImageView
 
 @property (nonatomic, strong)PFUser *user;
-@property (nonatomic, strong)MWPhotoBrowser *browser;
+@property (nonatomic, weak)MWPhotoBrowser *browser;
 
 @end

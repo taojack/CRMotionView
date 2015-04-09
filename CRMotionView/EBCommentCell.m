@@ -14,8 +14,6 @@
 #import "EBCommentCell.h"
 #import "UIImageView+WebCache.h"
 
-#define imageSize 40
-
 UIImage* ResizeProfileImage2(UIImage *image)
 {
     CGRect rect = CGRectMake(0, 0, image.size.width, image.size.width);
@@ -83,7 +81,7 @@ UIImage* ResizeProfileImage2(UIImage *image)
 
 - (void)loadAuthorAvatar
 {
-    PLSUserImageView *imageView = [[PLSUserImageView alloc] initWithFrame:CGRectMake(10, 5, imageSize, imageSize)];
+    PLSUserImageView *imageView = [[PLSUserImageView alloc] initWithFrame:CGRectMake(10, 5, largeAvatarImageSize, largeAvatarImageSize)];
     [self addSubview:imageView];
     [self setAuthorAvatar:imageView];
 }
@@ -171,14 +169,16 @@ UIImage* ResizeProfileImage2(UIImage *image)
     }
     
     if([comment respondsToSelector:@selector(authorAvatar)]){
-        [self.authorAvatar sd_setImageWithURL:[NSURL URLWithString:[comment authorAvatar]] completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
+        [self.authorAvatar sd_setImageWithPreviousCachedImageWithURL:[NSURL URLWithString:[comment authorAvatar]] andPlaceholderImage:[UIImage imageNamed:@"ImagePlaceholder"] options:0 progress:^(NSInteger receivedSize, NSInteger expectedSize) {
+            //
+        } completed:^(UIImage *image, NSError *error, SDImageCacheType cacheType, NSURL *imageURL) {
             self.authorAvatar.image = ResizeProfileImage2(image);
         }];
         [self.authorAvatar.layer setMasksToBounds:YES];
         [self.authorAvatar setContentMode:UIViewContentModeScaleAspectFill];
         [self.authorAvatar.layer setRasterizationScale:[UIScreen mainScreen].scale];
         [self.authorAvatar.layer setShouldRasterize:YES];
-        [self.authorAvatar.layer setCornerRadius:imageSize/2];
+        [self.authorAvatar.layer setCornerRadius:largeAvatarImageSize/2];
     }
     
     if([comment respondsToSelector:@selector(attributedCommentText)] &&
