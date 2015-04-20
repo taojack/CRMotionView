@@ -344,19 +344,21 @@
     PFObject *photo = ((MWPhoto*)self.photo).object;
     if (userLikeObject) {
         photo[@"likeCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"likeCount"]) intValue] - 1];
+        [photo incrementKey:@"likeCountV2" byAmount:[[NSNumber alloc] initWithInt:-1]];
         [likeButton setImage:[UIImage imageNamed:@"Like"] forState:UIControlStateNormal];
-        [likeCount setText:photo[@"likeCount"] ?: @"0"];
+        [likeCount setText:[photo[@"likeCountV2"] stringValue] ?: @"0"];
         [likeCount sizeToFit];
         [userLikeObject deleteInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
             if (!error) {
                 [photo saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
                     if (!error) {
-                        ((MWPhoto*)self.photo).likeCount = photo[@"likeCount"];
+                        ((MWPhoto*)self.photo).likeCount = [photo[@"likeCountV2"] stringValue];
                         ((MWPhoto*)self.photo).userLikeObject = nil;
                     } else {
                         photo[@"likeCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"likeCount"]) intValue] + 1];
+                        [photo incrementKey:@"likeCountV2"];
                         [likeButton setImage:[UIImage imageNamed:@"LikeRed2"] forState:UIControlStateNormal];
-                        [likeCount setText:photo[@"likeCount"] ?: @"0"];
+                        [likeCount setText:[photo[@"likeCountV2"] stringValue] ?: @"0"];
                         [likeCount sizeToFit];
 #warning report incorrect likeCount to Flurry
                     }
@@ -367,22 +369,24 @@
     } else {
         userLikeObject = [PFObject objectWithClassName:@"UserPhotoAction"];
         photo[@"likeCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"likeCount"]) intValue] + 1];
+        [photo incrementKey:@"likeCountV2"];
         userLikeObject[@"user"] = [PFUser currentUser];
         userLikeObject[@"photo"] = photo;
         userLikeObject[@"like"] = [NSNumber numberWithBool:YES];
         userLikeObject[@"type"] = @"like";
         userLikeObject[@"userTo"] = photo[@"user"];
         [likeButton setImage:[UIImage imageNamed:@"LikeRed2"] forState:UIControlStateNormal];
-        [likeCount setText:photo[@"likeCount"] ?: @"0"];
+        [likeCount setText:[photo[@"likeCountV2"] stringValue] ?: @"0"];
         [likeCount sizeToFit];
         [userLikeObject saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
             if (!error) {
-                ((MWPhoto*)self.photo).likeCount = photo[@"likeCount"];
+                ((MWPhoto*)self.photo).likeCount = [photo[@"likeCountV2"] stringValue];
                 ((MWPhoto*)self.photo).userLikeObject = userLikeObject;
             } else {
                 photo[@"likeCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"likeCount"]) intValue] - 1];
+                [photo incrementKey:@"likeCountV2" byAmount:[[NSNumber alloc] initWithInt:-1]];
                 [likeButton setImage:[UIImage imageNamed:@"Like"] forState:UIControlStateNormal];
-                [likeCount setText:photo[@"likeCount"] ?: @"0"];
+                [likeCount setText:[photo[@"likeCountV2"] stringValue] ?: @"0"];
                 [likeCount sizeToFit];
             }
             [likeButton setUserInteractionEnabled:YES];
@@ -915,17 +919,19 @@
     MGSwipeButton *deleteButton = [MGSwipeButton buttonWithTitle:@"Delete" backgroundColor:[UIColor redColor] callback:^BOOL(MGSwipeTableCell *sender) {
         PFObject * photo = ((MWPhoto*)self.photo).object;
         [((MWComment*)comment).object deleteInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
-            photo[@"commentCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"commentCount"]) intValue] - 1];
-            
-            NSMutableArray *remainingComments = [NSMutableArray arrayWithArray:((MWPhoto*)self.photo).comments];
-            [remainingComments removeObjectAtIndex:indexPath.row];
-            ((MWPhoto*)self.photo).comments = [NSMutableArray arrayWithArray:remainingComments];
-            ((MWPhoto*)self.photo).commentCount = photo[@"commentCount"];
-            //[NSString stringWithFormat:@"%d", [(NSString*)((MWPhoto*)self.photo).commentCount intValue] - 1];
-            [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
-            [photo saveEventually];
-            
-            [self loadCommentsForScrollView];
+            if (!error) {
+                photo[@"commentCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"commentCount"]) intValue] - 1];
+                [photo incrementKey:@"commentCountV2" byAmount:[[NSNumber alloc] initWithInt:-1]];
+                
+                NSMutableArray *remainingComments = [NSMutableArray arrayWithArray:((MWPhoto*)self.photo).comments];
+                [remainingComments removeObjectAtIndex:indexPath.row];
+                ((MWPhoto*)self.photo).comments = [NSMutableArray arrayWithArray:remainingComments];
+                ((MWPhoto*)self.photo).commentCount = [photo[@"commentCountV2"] stringValue];
+                [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
+                [photo saveEventually];
+                
+                [self loadCommentsForScrollView];
+            }
         }];
         return YES;
     }];
@@ -1092,6 +1098,7 @@
 {
     PFObject *photo = ((MWPhoto*)self.photo).object;
     photo[@"commentCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"commentCount"]) intValue] + 1];
+    [photo incrementKey:@"commentCountV2"];
     
     PFObject *commentObject = [PFObject objectWithClassName:@"UserPhotoAction"];
     commentObject[@"user"] = [PFUser currentUser];
@@ -1110,7 +1117,7 @@
                 ((MWPhoto*)self.photo).comments = [[NSMutableArray alloc] init];
             }
             [((MWPhoto*)self.photo).comments addObject:comment];
-            ((MWPhoto*)self.photo).commentCount = photo[@"commentCount"];
+            ((MWPhoto*)self.photo).commentCount = [photo[@"commentCountV2"] stringValue];
             [self loadCommentsForScrollView];
         } else {
 #warning TODO update flurry with inconsistent comment count
