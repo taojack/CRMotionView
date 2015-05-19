@@ -41,6 +41,8 @@
  */
 - (id)initFromScrollView:(UIScrollView *)scrollView withImage:(UIImage *)image;
 
+- (void)pinch:(UIPinchGestureRecognizer *)gesture;
+
 @end
 
 

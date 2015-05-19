@@ -19,6 +19,7 @@ static float const kAnimationDumping            = .8;
 @property (nonatomic) UIImageView *imageView;
 
 @property BOOL allowCentering;
+@property CGFloat minScale;
 
 // The zoom scale required to show image with full height
 @property CGRect motionFrame;
@@ -84,6 +85,28 @@ static float const kAnimationDumping            = .8;
 
 #pragma mark - UI actions
 
+- (void)pinch:(UIPinchGestureRecognizer *)gesture {
+    if (gesture.state == UIGestureRecognizerStateEnded
+        || gesture.state == UIGestureRecognizerStateChanged) {
+        NSLog(@"gesture.scale = %f", gesture.scale);
+        
+        CGFloat currentScale = self.frame.size.width / self.bounds.size.width;
+        CGFloat newScale = currentScale * gesture.scale;
+        
+        if (newScale < 1) {
+            newScale = 1;
+        }
+        if (newScale > 4) {
+            newScale = 4;
+        }
+        
+        CGAffineTransform transform = CGAffineTransformMakeScale(newScale, newScale);
+        self.transform = transform;
+        gesture.scale = 1;
+    }
+}
+
+
 
 - (void)handleTap:(UITapGestureRecognizer *)gesture
 {
@@ -124,10 +147,12 @@ static float const kAnimationDumping            = .8;
     
     // Setup the scrollview to be exactly like the motion view (zoom scale and position)
     self.zoomScale     = (minScale * CGRectGetHeight(self.bounds)) / (minScale * self.imageView.image.size.height);;
+    self.minScale = self.zoomScale;
     self.contentOffset = self.startOffset;
     self.motionFrame   = self.imageView.frame;
     
     // Animate to init state
+#warning TODO: Add pinchGesture here to modify zoomScale
     [UIView animateWithDuration:kTransitionAnimationDuration delay:0 usingSpringWithDamping:kAnimationDumping initialSpringVelocity:0 options:UIViewAnimationOptionCurveEaseOut animations:^{
         self.zoomScale = minScale;
     } completion:^(BOOL finished) {

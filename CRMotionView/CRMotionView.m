@@ -15,6 +15,7 @@
 static const CGFloat CRMotionViewRotationMinimumTreshold = 0.1f;
 static const CGFloat CRMotionGyroUpdateInterval = 1 / 100;
 static const CGFloat CRMotionViewRotationFactor = 4.0f;
+static NSString *kPAPUserDefaultsUserPhotoDetailPreferenceKey    = @"com.journey.userDefaults.userPhotoDetail.preference";
 
 @interface CRMotionView () <CRZoomScrollViewDelegate>
 
@@ -79,8 +80,8 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
     _minimumXOffset = 0;
     _zoomEnabled   = YES;
     // Tap gesture to open zoomable view
-    UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
-    [tapGesture setNumberOfTouchesRequired : 2];
+//    UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
+//    [tapGesture setNumberOfTouchesRequired : 2];
 //    [self addGestureRecognizer:tapGesture];
     [self setMotionEnabled:YES];
 }
@@ -102,22 +103,39 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
         
         UIImageView *imageView = (UIImageView *)self.contentView;
         if (CGRectGetWidth(self.contentView.frame) >= imageView.image.size.width) {
+            if (self.zoomScrollView != nil) {
+                [self.zoomScrollView removeFromSuperview];
+                self.zoomScrollView = nil;
+                [self.contentView setHidden:YES];
+            }
             return;
         }
         
         if (self.zoomScrollView != nil) {
             [self.zoomScrollView removeFromSuperview];
             self.zoomScrollView = nil;
+            [self.contentView setHidden:NO];
+            [[NSUserDefaults standardUserDefaults] setInteger:0 forKey:kPAPUserDefaultsUserPhotoDetailPreferenceKey];
+            [[NSUserDefaults standardUserDefaults] synchronize];
         } else {
             // Stop motion to avoid transition jump between two views
             //        [self stopMonitoring];
             // Init and setup the zoomable scroll view
             self.zoomScrollView = [[CRZoomScrollView alloc] initFromScrollView:self.scrollView withImage:imageView.image];
             self.zoomScrollView.zoomDelegate = self;
-            
+            [self.contentView setHidden:YES];
             [self addSubview:self.zoomScrollView];
+            NSInteger preference = (NSInteger)[[NSUserDefaults standardUserDefaults] integerForKey:kPAPUserDefaultsUserPhotoDetailPreferenceKey];
+            if (preference != 1) {
+                [[NSUserDefaults standardUserDefaults] setInteger:1 forKey:kPAPUserDefaultsUserPhotoDetailPreferenceKey];
+                [[NSUserDefaults standardUserDefaults] synchronize];
+            }
         }
     }
+}
+
+- (void)pinch:(UIPinchGestureRecognizer *)gesture {
+    [self.zoomScrollView pinch:gesture];
 }
 
 #pragma mark - Setters
@@ -151,6 +169,10 @@ static const CGFloat CRMotionViewRotationFactor = 4.0f;
         
         UIImageView *imageView = [[UIImageView alloc] initWithImage:image];
         [self setContentView:imageView];
+        NSInteger preference = (NSInteger)[[NSUserDefaults standardUserDefaults] integerForKey:kPAPUserDefaultsUserPhotoDetailPreferenceKey];
+        if (preference == 1) {
+            [self handleTap:nil];
+        }
     } else {
         _image = nil;
     }

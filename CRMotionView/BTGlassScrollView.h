@@ -58,6 +58,7 @@
 - (void)setBlurNeedDisplay:(UIImage*)img;
 - (void)resetForegroundOffset;
 - (void)addMapView;
+- (void)resetZoom;
 @end
 
 

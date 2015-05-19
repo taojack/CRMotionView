@@ -227,7 +227,11 @@
         
         
     } else {
-        [_backgroundImageView setImage:_backgroundImage];
+        if (backgroundImage) {
+            [_backgroundImageView setImage:_backgroundImage];
+        } else {
+            [_backgroundImageView setImage:[UIImage imageNamed:@"Background-Screen-Blur"]];
+        }
         [_backgroundImageView positionIndictatorToForegroundView:_foregroundView originY:locationName.frame.origin.y + locationName.frame.size.height + PADDING*2];
     }
 }
@@ -272,6 +276,10 @@
 - (void)resetForegroundOffset
 {
     [_foregroundScrollView setContentOffset:CGPointMake(0, 0)];
+}
+
+- (void)resetZoom {
+    [_backgroundImageView handleTap:nil];
 }
 
 - (UIButton*)likeButton
@@ -343,48 +351,41 @@
     PFObject *userLikeObject = ((MWPhoto*)self.photo).userLikeObject;
     PFObject *photo = ((MWPhoto*)self.photo).object;
     if (userLikeObject) {
-        photo[@"likeCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"likeCount"]) intValue] - 1];
-        [photo incrementKey:@"likeCountV2" byAmount:[[NSNumber alloc] initWithInt:-1]];
         [likeButton setImage:[UIImage imageNamed:@"Like"] forState:UIControlStateNormal];
-        [likeCount setText:[photo[@"likeCountV2"] stringValue] ?: @"0"];
+        [likeCount setText:[NSString stringWithFormat:@"%d", [((MWPhoto*)self.photo).likeCount intValue] - 1]];
         [likeCount sizeToFit];
         [userLikeObject deleteInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
             if (!error) {
-                [photo saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
-                    if (!error) {
-                        ((MWPhoto*)self.photo).likeCount = [photo[@"likeCountV2"] stringValue];
-                        ((MWPhoto*)self.photo).userLikeObject = nil;
-                    } else {
-                        photo[@"likeCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"likeCount"]) intValue] + 1];
-                        [photo incrementKey:@"likeCountV2"];
-                        [likeButton setImage:[UIImage imageNamed:@"LikeRed2"] forState:UIControlStateNormal];
-                        [likeCount setText:[photo[@"likeCountV2"] stringValue] ?: @"0"];
-                        [likeCount sizeToFit];
-#warning report incorrect likeCount to Flurry
-                    }
-                    [likeButton setUserInteractionEnabled:YES];
-                }];
+                ((MWPhoto*)self.photo).likeCount = likeCount.text;
+                ((MWPhoto*)self.photo).userLikeObject = nil;
+                photo[@"commentCountV2"] = @([photo[@"commentCountV2"] intValue] - 1);
+            } else {
+                [likeButton setImage:[UIImage imageNamed:@"LikeRed2"] forState:UIControlStateNormal];
+                [likeCount setText:[photo[@"likeCountV2"] stringValue] ?: @"0"];
+                [likeCount sizeToFit];
             }
+            [likeButton setUserInteractionEnabled:YES];
         }];
     } else {
+        if ([photo isDirty]) {
+            photo = [PFObject objectWithoutDataWithClassName:@"Story" objectId:photo.objectId];
+            [photo fetch];
+        }
         userLikeObject = [PFObject objectWithClassName:@"UserPhotoAction"];
-        photo[@"likeCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"likeCount"]) intValue] + 1];
-        [photo incrementKey:@"likeCountV2"];
         userLikeObject[@"user"] = [PFUser currentUser];
         userLikeObject[@"photo"] = photo;
         userLikeObject[@"like"] = [NSNumber numberWithBool:YES];
         userLikeObject[@"type"] = @"like";
         userLikeObject[@"userTo"] = photo[@"user"];
         [likeButton setImage:[UIImage imageNamed:@"LikeRed2"] forState:UIControlStateNormal];
-        [likeCount setText:[photo[@"likeCountV2"] stringValue] ?: @"0"];
+        [likeCount setText:[NSString stringWithFormat:@"%d", [((MWPhoto*)self.photo).likeCount intValue] + 1]];
         [likeCount sizeToFit];
         [userLikeObject saveInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
             if (!error) {
-                ((MWPhoto*)self.photo).likeCount = [photo[@"likeCountV2"] stringValue];
+                ((MWPhoto*)self.photo).likeCount = likeCount.text;
                 ((MWPhoto*)self.photo).userLikeObject = userLikeObject;
+                photo[@"commentCountV2"] = @([photo[@"commentCountV2"] intValue] + 1);
             } else {
-                photo[@"likeCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"likeCount"]) intValue] - 1];
-                [photo incrementKey:@"likeCountV2" byAmount:[[NSNumber alloc] initWithInt:-1]];
                 [likeButton setImage:[UIImage imageNamed:@"Like"] forState:UIControlStateNormal];
                 [likeCount setText:[photo[@"likeCountV2"] stringValue] ?: @"0"];
                 [likeCount sizeToFit];
@@ -397,7 +398,6 @@
 - (void)shareButtonPressed:(id)sender {
     [[[UIAlertView alloc] initWithTitle:NSLocalizedString(@"Alert", nil) message:@"This functionality is not currently available"  delegate:self cancelButtonTitle:NSLocalizedString(@"OK", nil) otherButtonTitles:nil] show];
 }
-
 
 #pragma mark - Views creation
 #pragma mark ScrollViews
@@ -692,7 +692,10 @@
     
     UITapGestureRecognizer *doubleTapRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(handleTap:)];
     doubleTapRecognizer.numberOfTapsRequired = 2;
-//    [_foregroundScrollView addGestureRecognizer:doubleTapRecognizer];
+    [_foregroundScrollView addGestureRecognizer:doubleTapRecognizer];
+    
+    UIPinchGestureRecognizer *pinchGestureRecognizer = [[UIPinchGestureRecognizer alloc] initWithTarget:self action:@selector(pinch:)];
+    [_foregroundScrollView addGestureRecognizer:pinchGestureRecognizer];
     
     [singleTapRecognizer requireGestureRecognizerToFail:doubleTapRecognizer];
     
@@ -748,6 +751,17 @@
 - (void)handleTap:(UITapGestureRecognizer *)gesture
 {
     [_backgroundImageView handleTap:gesture];
+    if ([_backgroundImageView isInZoom]) {
+        [_blurredBackgroundImageView setAlpha:0];
+        [_foregroundScrollView setContentOffset:CGPointMake(0, 0 - _foregroundScrollView.contentInset.top) animated:YES];
+    } else {
+        [_foregroundScrollView setContentOffset:CGPointMake(0, 0 - _foregroundScrollView.contentInset.top) animated:YES];
+    }
+}
+
+- (void)pinch:(UIPinchGestureRecognizer *)gesture
+{
+    [_backgroundImageView pinch:gesture];
     if ([_backgroundImageView isInZoom]) {
         [_blurredBackgroundImageView setAlpha:0];
         [_foregroundScrollView setContentOffset:CGPointMake(0, 0 - _foregroundScrollView.contentInset.top) animated:YES];
@@ -917,18 +931,15 @@
     //configure right buttons
     NSMutableArray *rightButtons = [[NSMutableArray alloc] init];
     MGSwipeButton *deleteButton = [MGSwipeButton buttonWithTitle:@"Delete" backgroundColor:[UIColor redColor] callback:^BOOL(MGSwipeTableCell *sender) {
-        PFObject * photo = ((MWPhoto*)self.photo).object;
         [((MWComment*)comment).object deleteInBackgroundWithBlock:^(BOOL succeeded, NSError *error) {
             if (!error) {
-                photo[@"commentCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"commentCount"]) intValue] - 1];
-                [photo incrementKey:@"commentCountV2" byAmount:[[NSNumber alloc] initWithInt:-1]];
-                
                 NSMutableArray *remainingComments = [NSMutableArray arrayWithArray:((MWPhoto*)self.photo).comments];
                 [remainingComments removeObjectAtIndex:indexPath.row];
                 ((MWPhoto*)self.photo).comments = [NSMutableArray arrayWithArray:remainingComments];
-                ((MWPhoto*)self.photo).commentCount = [photo[@"commentCountV2"] stringValue];
+                ((MWPhoto*)self.photo).commentCount = [NSString stringWithFormat:@"%d", [((MWPhoto*)self.photo).commentCount intValue] - 1];
                 [tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationFade];
-                [photo saveEventually];
+                PFObject *photo = ((MWPhoto*)self.photo).object;
+                photo[@"commentCountV2"] = @([photo[@"commentCountV2"] intValue] + 1);
                 
                 [self loadCommentsForScrollView];
             }
@@ -1097,8 +1108,10 @@
 - (void)photoViewController:(BTGlassScrollView *)controller didPostNewComment:(NSString *)comment
 {
     PFObject *photo = ((MWPhoto*)self.photo).object;
-    photo[@"commentCount"] = [NSString stringWithFormat:@"%d", [((NSString*)photo[@"commentCount"]) intValue] + 1];
-    [photo incrementKey:@"commentCountV2"];
+    if ([photo isDirty]) {
+        photo = [PFObject objectWithoutDataWithClassName:@"Story" objectId:photo.objectId];
+        [photo fetch];
+    }
     
     PFObject *commentObject = [PFObject objectWithClassName:@"UserPhotoAction"];
     commentObject[@"user"] = [PFUser currentUser];
@@ -1117,10 +1130,9 @@
                 ((MWPhoto*)self.photo).comments = [[NSMutableArray alloc] init];
             }
             [((MWPhoto*)self.photo).comments addObject:comment];
-            ((MWPhoto*)self.photo).commentCount = [photo[@"commentCountV2"] stringValue];
+            ((MWPhoto*)self.photo).commentCount = [NSString stringWithFormat:@"%d", [((MWPhoto*)self.photo).commentCount intValue] + 1];
+            photo[@"commentCountV2"] = @([photo[@"commentCountV2"] intValue] + 1);
             [self loadCommentsForScrollView];
-        } else {
-#warning TODO update flurry with inconsistent comment count
         }
     }];
 }
