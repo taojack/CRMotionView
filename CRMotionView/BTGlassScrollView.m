@@ -358,7 +358,7 @@
             if (!error) {
                 ((MWPhoto*)self.photo).likeCount = likeCount.text;
                 ((MWPhoto*)self.photo).userLikeObject = nil;
-                photo[@"commentCountV2"] = @([photo[@"commentCountV2"] intValue] - 1);
+                photo[@"likeCountV2"] = @([photo[@"likeCountV2"] intValue] - 1);
             } else {
                 [likeButton setImage:[UIImage imageNamed:@"LikeRed2"] forState:UIControlStateNormal];
                 [likeCount setText:[photo[@"likeCountV2"] stringValue] ?: @"0"];
@@ -384,7 +384,7 @@
             if (!error) {
                 ((MWPhoto*)self.photo).likeCount = likeCount.text;
                 ((MWPhoto*)self.photo).userLikeObject = userLikeObject;
-                photo[@"commentCountV2"] = @([photo[@"commentCountV2"] intValue] + 1);
+                photo[@"likeCountV2"] = @([photo[@"likeCountV2"] intValue] + 1);
             } else {
                 [likeButton setImage:[UIImage imageNamed:@"Like"] forState:UIControlStateNormal];
                 [likeCount setText:[photo[@"likeCountV2"] stringValue] ?: @"0"];
